@@ -52,9 +52,9 @@ def main():
         # Update Bin PKGBUILD
         update_pkgbuild('linux-galaxyaudio-bin/PKGBUILD', arch_ver)
         
-        # Run generate-patch.sh to ensure patch is up to date (it downloads from URL)
-        print("Regenerating patch...")
-        subprocess.run(['bash', 'scripts/generate-patch.sh'], check=True)
+        # Patch is now static in the repo, no need to regenerate
+        # print("Regenerating patch...")
+        # subprocess.run(['bash', 'scripts/generate-patch.sh'], check=True)
         
         # Update checksums for Main PKGBUILD
         # Note: This requires updpkgsums to be installed (pacman-contrib)
