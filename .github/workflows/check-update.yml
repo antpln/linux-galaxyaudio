@@ -1,0 +1,43 @@
+name: Check for Kernel Updates
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Run daily at midnight
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  check-update:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          pacman -Sy --noconfirm
+          pacman -S --noconfirm python pacman-contrib git curl jq
+          
+      - name: Check and Update
+        id: update
+        run: python3 scripts/auto_update.py
+        
+      - name: Commit and Push
+        if: steps.update.outputs.updated == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Trust directory
+          git config --global --add safe.directory '*'
+          
+          git add PKGBUILD linux-galaxyaudio-bin/PKGBUILD max98390-sound.patch
+          
+          VERSION="${{ steps.update.outputs.version }}"
+          git commit -m "feat: update to kernel $VERSION"
+          
+          git push origin main
+          
+          # Create and push tag to trigger build-release
+          # Note: auto_update.py resets pkgrel to 1, so we tag as v<ver>-1
+          git tag "v$VERSION-1"
+          git push origin "v$VERSION-1"

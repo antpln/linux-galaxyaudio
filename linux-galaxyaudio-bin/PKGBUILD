@@ -1,0 +1,47 @@
+# Maintainer: Your Name <your@email.com>
+pkgname=linux-galaxyaudio-bin
+_pkgname=linux-galaxyaudio
+pkgver=6.12.8
+pkgrel=1
+pkgdesc='Linux kernel for Samsung Galaxy Book 4 with MAX98390 sound support (Precompiled)'
+arch=(x86_64)
+url="https://github.com/thesofproject/linux/pull/5616"
+license=('GPL2')
+provides=("${_pkgname}" "linux")
+conflicts=("${_pkgname}" "linux")
+depends=(coreutils kmod initramfs)
+optdepends=('linux-firmware: firmware images needed for some devices')
+
+# Change this to your actual GitHub repository
+_gh_repo="antpln/linux-galaxyaudio"
+
+source=(
+  "${_pkgname}-${pkgver}-${pkgrel}-x86_64.pkg.tar.zst::https://github.com/${_gh_repo}/releases/download/v${pkgver}-${pkgrel}/${_pkgname}-${pkgver}-${pkgrel}-x86_64.pkg.tar.zst"
+)
+sha256sums=('SKIP')
+
+package() {
+  # Extract the package data relative to $pkgdir
+  # makepkg extracts sources to $srcdir
+  # We need to install the contents of the pkg.tar.zst
+  
+  # Since this is a prebuilt package (pkg.tar.zst), tar should have extracted it into srcdir
+  # We just need to copy everything to pkgdir
+  
+  cd "${srcdir}"
+  
+  # Copy everything from the root of the extracted package to pkgdir
+  # Excluding the .PKGINFO, .BUILDINFO, .MTREE etc.
+  
+  # Note: makepkg automatically extracts the tar.zst in prepare/sourceretrieval?
+  # No, for non-standard extensions or just general behavior, it extracts.
+  # But a pkg.tar.zst IS an archive.
+  
+  # Careful: If we just cp -a, we might get metadata files.
+  
+  # Standard way for -bin packages:
+  bsdtar -xf "${_pkgname}-${pkgver}-${pkgrel}-x86_64.pkg.tar.zst" -C "${pkgdir}"
+  
+  # Cleanup package metadata
+  rm -f "${pkgdir}"/.{PKGINFO,BUILDINFO,MTREE,SRCINFO}
+}

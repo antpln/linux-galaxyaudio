@@ -1,0 +1,37 @@
+name: Build and Release Binary
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          pacman -Sy --noconfirm
+          # Install deps needed for makepkg that aren't in base-devel (if any)
+          # git is needed
+          pacman -S --noconfirm git bc kmod libelf cpio perl tar xz python pahole
+
+      - name: Build Package
+        run: |
+          # Create build user
+          useradd builduser -m
+          chown -R builduser:builduser .
+          
+          # Build
+          su builduser -c "makepkg -s --noconfirm"
+          
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            *.pkg.tar.zst

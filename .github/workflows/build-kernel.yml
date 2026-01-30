@@ -1,0 +1,101 @@
+name: Build Kernel
+
+on:
+  schedule:
+    - cron: '0 4 * * *'  # 4 AM UTC daily
+  workflow_dispatch:
+    inputs:
+      forceArtifacts:
+        description: "Force build even if no update"
+        required: false
+        default: "false"
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Sy --noconfirm git jq curl openssh nodejs pacman-contrib
+          # Allow makepkg to run as root or create user
+          useradd builduser -m
+          passwd -d builduser
+          printf 'builduser ALL=(ALL) ALL\n' | tee -a /etc/sudoers
+          
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src
+          fetch-depth: 0
+
+      - name: Check for updates
+        id: check
+        shell: bash
+        run: |
+          cd src
+          chown -R builduser:builduser .
+          
+          # Run check script
+          su builduser -c "bash scripts/update-kernel.sh" > update_output.txt
+          cat update_output.txt
+          
+          # Parse output
+          if grep -q "::set-output name=updated::true" update_output.txt; then
+            echo "UPDATED=true" >> $GITHUB_ENV
+          elif [ "${{ inputs.forceArtifacts }}" == "true" ]; then
+             echo "UPDATED=true" >> $GITHUB_ENV
+          else
+            echo "UPDATED=false" >> $GITHUB_ENV
+          fi
+
+      - name: Update SRCINFO
+        if: env.UPDATED == 'true'
+        shell: bash
+        run: |
+          cd src
+          su builduser -c "makepkg --printsrcinfo > .SRCINFO"
+
+      - name: Download Patch & Build
+        if: env.UPDATED == 'true'
+        shell: bash
+        run: |
+          cd src
+          
+          # Refresh patch
+          su builduser -c "bash scripts/generate-patch.sh"
+          
+          # Build
+          su builduser -c "makepkg -s --noconfirm"
+          
+          # Prepare Repo
+          mkdir -p repo/x86_64
+          mv *.pkg.tar.zst repo/x86_64/
+          cd repo/x86_64
+          repo-add linux-galaxyaudio.db.tar.gz *.pkg.tar.zst
+          
+      - name: Deploy to GitHub Pages (Binary Repo)
+        if: env.UPDATED == 'true'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./src/repo
+          publish_branch: gh-pages
+          keep_files: true
+
+      - name: Commit PKGBUILD updates
+        if: env.UPDATED == 'true'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          repository: src
+          commit_message: "sys: update kernel to ${{ env.PKGVER }}"
+          file_pattern: "PKGBUILD .SRCINFO max98390-sound.patch"
+          
+      - name: Trigger AUR Update
+        if: env.UPDATED == 'true'
+        run: |
+          echo "Changes committed. AUR workflow should trigger on push."

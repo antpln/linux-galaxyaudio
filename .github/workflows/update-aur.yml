@@ -1,0 +1,60 @@
+name: Update AUR
+
+on:
+  push:
+    paths:
+      - 'PKGBUILD'
+      - '.SRCINFO'
+      - 'linux-galaxyaudio.install'
+  workflow_dispatch:
+
+jobs:
+  aur-publish:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: pacman -Sy --noconfirm openssh git
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AUR_SSH_PRIVATE_KEY }}" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          
+      - name: Update AUR
+        run: |
+          # Configure git
+          git config --global user.name "${{ secrets.AUR_USERNAME }}"
+          git config --global user.email "${{ secrets.AUR_EMAIL }}"
+          
+          # Trust all directories (fix dubious ownership caused by chown)
+          git config --global --add safe.directory '*'
+          
+          # Clone AUR repo using GIT_SSH_COMMAND to bypass host key check
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o StrictHostKeyChecking=no"
+          git clone ssh://aur@aur.archlinux.org/linux-galaxyaudio.git aur-repo
+          
+          # Copy files
+          cp PKGBUILD linux-galaxyaudio.install config max98390-sound.patch aur-repo/
+          
+          cd aur-repo
+          
+          # Create build user for makepkg
+          useradd builduser -m
+          chown -R builduser:builduser .
+          
+          # Generate SRCINFO as builduser
+          su builduser -c "makepkg --printsrcinfo > .SRCINFO"
+          
+          # Commit and push
+          git add PKGBUILD .SRCINFO linux-galaxyaudio.install max98390-sound.patch config
+          
+          if ! git diff --cached --quiet; then
+            git commit -m "Update to ${{ github.sha }}"
+            git push
+          else
+            echo "No changes to push."
+          fi
