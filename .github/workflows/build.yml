@@ -1,0 +1,98 @@
+name: Build Kernel
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  push:
+    branches: [main]
+    paths: [PKGBUILD, config, .github/workflows/build.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    
+    steps:
+      - name: Install dependencies
+        run: pacman -Sy --noconfirm git bc kmod libelf cpio perl tar xz python pahole pacman-contrib curl
+          
+      - uses: actions/checkout@v4
+      
+      - name: Check and build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          
+          echo "Disk space before build:"
+          df -h .
+          
+          # Get Arch kernel version from package page (more reliable than JSON API)
+          # The package page shows "Version: X.X.X.archX-X" 
+          ARCH_VER=$(curl -sL "https://archlinux.org/packages/core/x86_64/linux/" | grep -oP 'linux \K[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          
+          # Fallback: try the JSON API
+          if [ -z "$ARCH_VER" ]; then
+            ARCH_VER=$(curl -sL "https://archlinux.org/packages/core/x86_64/linux/json" | grep -oP '"pkgver":\s*"[^"]*"' | grep -oP '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          fi
+          
+          # Final fallback: use pacman
+          if [ -z "$ARCH_VER" ]; then
+            pacman -Sy --noconfirm
+            ARCH_VER=$(pacman -Si linux 2>/dev/null | grep "^Version" | awk '{print $3}' | sed 's/\.arch.*//')
+          fi
+          
+          if [ -z "$ARCH_VER" ]; then
+            echo "ERROR: Could not determine Arch kernel version"
+            exit 1
+          fi
+          
+          CURRENT=$(grep "^pkgver=" PKGBUILD | cut -d= -f2)
+          
+          echo "Arch: $ARCH_VER | Current: $CURRENT"
+          
+          if [ "$ARCH_VER" = "$CURRENT" ]; then
+            echo "Already up to date"
+            exit 0
+          fi
+          
+          echo "Updating to $ARCH_VER"
+          
+          # Update PKGBUILD
+          sed -i "s/^pkgver=.*/pkgver=${ARCH_VER}/" PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          
+          # Verify
+          grep "^pkgver=" PKGBUILD
+          
+          # Setup build user
+          useradd builder -m
+          echo 'builder ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+          chown -R builder:builder .
+          
+          # Build
+          su builder -c "updpkgsums"
+          su builder -c "makepkg -s --noconfirm"
+          su builder -c "makepkg --printsrcinfo > .SRCINFO"
+          
+          # Commit
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory "$PWD"
+          
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to ${ARCH_VER}"
+          git push
+          
+          echo "Disk space after build:"
+          df -h .
+          
+          # Release
+          gh release create "v${ARCH_VER}" \
+            --title "Linux ${ARCH_VER}" \
+            --notes "Linux kernel ${ARCH_VER} with MAX98390 sound support for Samsung Galaxy Book." \
+            *.pkg.tar.zst
