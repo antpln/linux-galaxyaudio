@@ -43,6 +43,8 @@ jobs:
         run: |
           # Enable ccache
           sed -i 's/!ccache/ccache/g' /etc/makepkg.conf
+          # Create and persist a MAKEFLAGS variable using nproc
+          echo "MAKEFLAGS=\"-j\$(nproc)\"" >> /etc/makepkg.conf
           export CCACHE_DIR="${PWD}/.ccache"
           mkdir -p "$CCACHE_DIR"
           ccache -M 5G

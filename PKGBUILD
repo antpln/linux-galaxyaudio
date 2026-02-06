@@ -41,6 +41,16 @@ prepare() {
   echo "Enabling Galaxy Book 4 Sound Configs..."
   scripts/config --module CONFIG_SND_SOC_MAX98390
   scripts/config --enable CONFIG_SND_HDA_CODEC_REALTEK
+
+  echo "Disabling Debug Info for faster build..."
+  scripts/config --disable CONFIG_DEBUG_INFO
+  scripts/config --disable CONFIG_DEBUG_INFO_BTF
+  scripts/config --disable CONFIG_DEBUG_INFO_DWARF4
+  scripts/config --disable CONFIG_DEBUG_INFO_DWARF5
+  scripts/config --disable CONFIG_PAHOLE_HAS_SPLIT_BTF
+  scripts/config --disable CONFIG_DEBUG_INFO_BTF_MODULES
+  scripts/config --disable CONFIG_SLUB_DEBUG
+  scripts/config --disable CONFIG_PM_DEBUG
   # Ensure dependencies are met (I2C, etc normally are)
 
   make olddefconfig
