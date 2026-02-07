@@ -55,12 +55,14 @@ jobs:
           # The files are in the root (parent directory)
           SHA_BIN=$(sha256sum ../linux-galaxyaudio-${VERSION}-1-x86_64.pkg.tar.zst | cut -d' ' -f1)
           SHA_HEADERS=$(sha256sum ../linux-galaxyaudio-headers-${VERSION}-1-x86_64.pkg.tar.zst | cut -d' ' -f1)
+          SHA_PRESET=$(sha256sum linux-galaxyaudio.preset | cut -d' ' -f1)
           
           echo "SHA_BIN: $SHA_BIN"
           echo "SHA_HEADERS: $SHA_HEADERS"
+          echo "SHA_PRESET: $SHA_PRESET"
           
           # Update sha256sums in PKGBUILD
-          sed -i "s/sha256sums=('SKIP' 'SKIP')/sha256sums=('${SHA_BIN}' '${SHA_HEADERS}')/" PKGBUILD
+          sed -i "s/sha256sums=('SKIP' 'SKIP' 'SKIP')/sha256sums=('${SHA_BIN}' '${SHA_HEADERS}' '${SHA_PRESET}')/" PKGBUILD
           
           # 4. Generate .SRCINFO
           # Setup builder user
@@ -91,3 +93,4 @@ jobs:
             linux-galaxyaudio-bin/PKGBUILD
             linux-galaxyaudio-bin/.SRCINFO
             linux-galaxyaudio-bin/linux-galaxyaudio-bin.install
+            linux-galaxyaudio-bin/linux-galaxyaudio.preset
