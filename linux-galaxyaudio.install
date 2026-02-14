@@ -1,0 +1,63 @@
+#!/bin/bash
+# linux-galaxyaudio.install
+# Post-install hooks for linux-galaxyaudio kernel
+
+KERNEL_NAME=galaxyaudio
+
+post_install() {
+    echo ":: Running post-install hooks for linux-${KERNEL_NAME}..."
+    
+    # Regenerate initramfs
+    if [ -x /usr/bin/mkinitcpio ]; then
+        echo ":: Generating initramfs for linux-${KERNEL_NAME}..."
+        mkinitcpio -p linux-${KERNEL_NAME} 2>/dev/null || \
+            mkinitcpio -k /boot/vmlinuz-linux-${KERNEL_NAME} -g /boot/initramfs-linux-${KERNEL_NAME}.img
+    fi
+    
+    # Update GRUB if installed
+    if [ -x /usr/bin/grub-mkconfig ] && [ -f /boot/grub/grub.cfg ]; then
+        echo ":: Updating GRUB configuration..."
+        grub-mkconfig -o /boot/grub/grub.cfg
+    fi
+    
+    # systemd-boot / kernel-install
+    if [ -x /usr/bin/kernel-install ]; then
+        echo ":: calling kernel-install..."
+        # Find the version (directory name in /usr/lib/modules that matches our kernel)
+        KVER=$(ls /usr/lib/modules | grep "${KERNEL_NAME}" | sort -V | tail -n 1)
+        if [ -n "$KVER" ]; then
+            kernel-install add "$KVER" "/boot/vmlinuz-linux-${KERNEL_NAME}" "/boot/initramfs-linux-${KERNEL_NAME}.img" "/boot/initramfs-linux-${KERNEL_NAME}-fallback.img"
+        fi
+    fi
+    
+    echo ""
+    echo ":: Samsung Galaxy Book sound support enabled!"
+    echo ":: Please reboot to use the new kernel."
+}
+
+post_upgrade() {
+    post_install
+}
+
+post_remove() {
+    # Clean up initramfs
+    rm -f /boot/initramfs-linux-${KERNEL_NAME}.img
+    rm -f /boot/initramfs-linux-${KERNEL_NAME}-fallback.img
+    
+    # Update GRUB if installed
+    if [ -x /usr/bin/grub-mkconfig ] && [ -f /boot/grub/grub.cfg ]; then
+        echo ":: Updating GRUB configuration..."
+        grub-mkconfig -o /boot/grub/grub.cfg
+    fi
+    
+    # Remove kernel-install entry
+    if [ -x /usr/bin/kernel-install ]; then
+        echo ":: calling kernel-install remove..."
+        KVER=$(ls /usr/lib/modules | grep "${KERNEL_NAME}" | sort -V | tail -n 1)
+        if [ -n "$KVER" ]; then
+             kernel-install remove "$KVER"
+        fi
+    fi
+
+    echo ":: linux-${KERNEL_NAME} removed. Please reboot to switch to your other kernel."
+}

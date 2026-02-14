@@ -1,0 +1,96 @@
+name: Deploy Binary to AUR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (defaults to latest release)'
+        required: false
+        type: string
+
+jobs:
+  deploy-aur-bin:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    
+    steps:
+      - name: Install dependencies
+        run: pacman -Sy --noconfirm git pacman-contrib curl github-cli sudo
+
+      - uses: actions/checkout@v4
+      
+      - name: Prepare and Deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -e
+          
+          # Fix "dubious ownership" error for git/gh
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          
+          # 1. Determine Version
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            # Get latest release tag, strip 'v' if present
+            VERSION=$(gh release view --json tagName --jq .tagName | sed 's/^v//')
+          fi
+          
+          echo "Deploying version: $VERSION"
+          
+          # 2. Download Release Artifacts
+          # We need the pkg.tar.zst files to calculate checksums
+          echo "Downloading artifacts..."
+          gh release download "v${VERSION}" -p "*.pkg.tar.zst"
+          
+          # 3. Setup PKGBUILD
+          cd linux-galaxyaudio-bin
+          
+          # Update pkgver
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          
+          # Calculate Checksums
+          # The files are in the root (parent directory)
+          SHA_BIN=$(sha256sum ../linux-galaxyaudio-${VERSION}-1-x86_64.pkg.tar.zst | cut -d' ' -f1)
+          SHA_HEADERS=$(sha256sum ../linux-galaxyaudio-headers-${VERSION}-1-x86_64.pkg.tar.zst | cut -d' ' -f1)
+          SHA_PRESET=$(sha256sum linux-galaxyaudio.preset | cut -d' ' -f1)
+          
+          echo "SHA_BIN: $SHA_BIN"
+          echo "SHA_HEADERS: $SHA_HEADERS"
+          echo "SHA_PRESET: $SHA_PRESET"
+          
+          # Update sha256sums in PKGBUILD
+          sed -i "s/sha256sums=('SKIP' 'SKIP' 'SKIP')/sha256sums=('${SHA_BIN}' '${SHA_HEADERS}' '${SHA_PRESET}')/" PKGBUILD
+          
+          # 4. Generate .SRCINFO
+          # Setup builder user
+          useradd builder -m
+          echo 'builder ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+          
+          # Ensure builder owns the directory
+          chown -R builder:builder .
+          
+          # Generate .SRCINFO as builder
+          su builder -c "makepkg --printsrcinfo" > .SRCINFO
+          
+          echo "Generated .SRCINFO:"
+          cat .SRCINFO
+          
+          cd ..
+          
+      - name: Publish to AUR
+        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
+        with:
+          pkgname: linux-galaxyaudio-bin
+          pkgbuild: ./linux-galaxyaudio-bin/PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Update to $(grep pkgver= linux-galaxyaudio-bin/PKGBUILD | cut -d= -f2)"
+          assets: |
+            linux-galaxyaudio-bin/PKGBUILD
+            linux-galaxyaudio-bin/.SRCINFO
+            linux-galaxyaudio-bin/linux-galaxyaudio-bin.install
+            linux-galaxyaudio-bin/linux-galaxyaudio.preset

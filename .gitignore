@@ -1,0 +1,14 @@
+# Build artifacts
+.ccache/
+pkg/
+src/
+*.tar.xz
+*.pkg.tar.zst
+*.log
+*.pkg.tar.xz
+
+# Auto-generated files
+config.old
+version
+.SRCINFO
+linux-galaxyaudio-bin/.SRCINFO
