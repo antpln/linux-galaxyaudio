@@ -116,8 +116,9 @@ jobs:
           # Calculate Checksums from the just-built packages in ..
           SHA_BIN=$(sha256sum ../linux-galaxyaudio-${ARCH_VER}-1-x86_64.pkg.tar.zst | cut -d' ' -f1)
           SHA_HEADERS=$(sha256sum ../linux-galaxyaudio-headers-${ARCH_VER}-1-x86_64.pkg.tar.zst | cut -d' ' -f1)
+          SHA_PRESET=$(sha256sum linux-galaxyaudio.preset | cut -d' ' -f1)
           
-          sed -i "s/sha256sums=('SKIP' 'SKIP')/sha256sums=('${SHA_BIN}' '${SHA_HEADERS}')/" PKGBUILD
+          sed -i "s/^sha256sums=.*/sha256sums=('${SHA_BIN}' '${SHA_HEADERS}' '${SHA_PRESET}')/" PKGBUILD
           
           # Generate .SRCINFO for binary package
           chown -R builder:builder .

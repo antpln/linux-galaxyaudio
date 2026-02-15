@@ -62,7 +62,7 @@ jobs:
           echo "SHA_PRESET: $SHA_PRESET"
           
           # Update sha256sums in PKGBUILD
-          sed -i "s/sha256sums=('SKIP' 'SKIP' 'SKIP')/sha256sums=('${SHA_BIN}' '${SHA_HEADERS}' '${SHA_PRESET}')/" PKGBUILD
+          sed -i "s/^sha256sums=.*/sha256sums=('${SHA_BIN}' '${SHA_HEADERS}' '${SHA_PRESET}')/" PKGBUILD
           
           # 4. Generate .SRCINFO
           # Setup builder user
