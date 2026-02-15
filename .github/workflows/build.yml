@@ -145,6 +145,12 @@ jobs:
           df -h .
           
           # Release
+          # If forcing, or if the tag exists for some reason, delete it first to allow replacement
+          if gh release view "v${ARCH_VER}" >/dev/null 2>&1; then
+            echo "Release v${ARCH_VER} exists. Deleting..."
+            gh release delete "v${ARCH_VER}" --cleanup-tag -y || true
+          fi
+
           gh release create "v${ARCH_VER}" \
             --title "Linux ${ARCH_VER}" \
             --notes "Linux kernel ${ARCH_VER} with MAX98390 sound support for Samsung Galaxy Book." \
