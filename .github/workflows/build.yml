@@ -134,7 +134,7 @@ jobs:
           
           git add PKGBUILD .SRCINFO linux-galaxyaudio-bin/PKGBUILD linux-galaxyaudio-bin/.SRCINFO
           
-          if ! git diff-index --quiet HEAD -- PKGBUILD .SRCINFO linux-galaxyaudio-bin/PKGBUILD linux-galaxyaudio-bin/.SRCINFO; then
+          if [ -n "$(git status --porcelain PKGBUILD .SRCINFO linux-galaxyaudio-bin/PKGBUILD linux-galaxyaudio-bin/.SRCINFO)" ]; then
             git commit -m "Update to ${ARCH_VER}"
             git push
           else
