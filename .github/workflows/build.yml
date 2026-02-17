@@ -24,7 +24,7 @@ jobs:
     
     steps:
       - name: Install dependencies
-        run: pacman -Sy --noconfirm git bc kmod libelf cpio perl tar xz python pahole pacman-contrib curl github-cli sudo ccache
+        run: pacman -Syu --noconfirm --overwrite '*' git bc kmod libelf cpio perl tar xz python pahole pacman-contrib curl github-cli sudo ccache
           
       - uses: actions/checkout@v4
       
