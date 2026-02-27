@@ -22,7 +22,7 @@ source=(
   "max98390-sound.patch"
 )
 sha256sums=('ed2c3c55fd38e6836c094fce356f2567f9516130b73354a29857960368c5687f'
-            '3afa69d43f44a8d88f01080bbf1cee73dab85d8c726714cb08e9f1f33dc8b24c'
+            'ea0faab7ec127f8510edbb7934fe3060c4a5617c23900e7f049b539c3db579d9'
             '11d333d7efe10e52dee4c662a6598b4eb689095ed58c0306379ff7855551e9d1')
 
 prepare() {
@@ -40,6 +40,8 @@ prepare() {
 
   echo "Enabling Galaxy Book 4 Sound Configs..."
   scripts/config --module CONFIG_SND_SOC_MAX98390
+  scripts/config --module CONFIG_SND_HDA_SCODEC_MAX98390
+  scripts/config --module CONFIG_SND_HDA_SCODEC_MAX98390_I2C
   scripts/config --enable CONFIG_SND_HDA_CODEC_REALTEK
 
   echo "Disabling Debug Info for faster build..."
