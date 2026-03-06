@@ -2,7 +2,7 @@
 pkgbase=linux-galaxyaudio
 pkgname=(linux-galaxyaudio linux-galaxyaudio-headers)
 _pkgname=linux
-pkgver=6.18.13
+pkgver=6.19.6
 pkgrel=1
 pkgdesc='Linux kernel for Samsung Galaxy Book 4 with MAX98390 sound support'
 arch=(x86_64)
