@@ -14,6 +14,10 @@ Based on [thesofproject/linux#5616](https://github.com/thesofproject/linux/pull/
 ```bash
 yay -S linux-galaxyaudio
 ```
+or for pre-built
+```bash
+yay -S linux-galaxyaudio-bin
+```
 
 ### From GitHub Releases
 
