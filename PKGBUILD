@@ -2,7 +2,7 @@
 pkgbase=linux-galaxyaudio
 pkgname=(linux-galaxyaudio linux-galaxyaudio-headers)
 _pkgname=linux
-pkgver=6.19.9
+pkgver=6.19.10
 pkgrel=1
 pkgdesc='Linux kernel for Samsung Galaxy Book 4 with MAX98390 sound support'
 arch=(x86_64)
@@ -21,7 +21,7 @@ source=(
   "config"
   "max98390-sound.patch"
 )
-sha256sums=('c16068a3af12e3943dee3b1eef57ca70229c069128bfa1184fb3f48b219d55bf'
+sha256sums=('466d441a0ea5e04b7023618b7b201bfd60effab225f806fd41ce663484395a1c'
             'ea0faab7ec127f8510edbb7934fe3060c4a5617c23900e7f049b539c3db579d9'
             '1a307906770dcd549be003dca120531653d8ad9f3c27b3fc9df5fe99384812b2')
 
