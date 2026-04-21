@@ -15,11 +15,12 @@ jobs:
     
     steps:
       - name: Install dependencies
-        run: pacman -Sy --noconfirm git pacman-contrib curl github-cli sudo
+        run: pacman -Sy --noconfirm git pacman-contrib curl github-cli sudo nodejs openssh
 
       - uses: actions/checkout@v4
       
       - name: Prepare and Deploy
+        id: prepare
         env:
           GH_TOKEN: ${{ github.token }}
           INPUT_VERSION: ${{ inputs.version }}
@@ -38,6 +39,7 @@ jobs:
           fi
           
           echo "Deploying version: $VERSION"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
           
           # 2. Download Release Artifacts
           # We need the pkg.tar.zst files to calculate checksums
@@ -80,17 +82,21 @@ jobs:
           
           cd ..
           
+          # Prepare flat directory for AUR deployment
+          mkdir -p deploy-bin
+          cp linux-galaxyaudio-bin/{PKGBUILD,.SRCINFO,linux-galaxyaudio-bin.install,linux-galaxyaudio.preset} deploy-bin/
+          
       - name: Publish to AUR
         uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
           pkgname: linux-galaxyaudio-bin
-          pkgbuild: ./linux-galaxyaudio-bin/PKGBUILD
+          pkgbuild: ./deploy-bin/PKGBUILD
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: "Update to $(grep pkgver= linux-galaxyaudio-bin/PKGBUILD | cut -d= -f2)"
+          commit_message: "Update to ${{ steps.prepare.outputs.version }}"
           assets: |
-            linux-galaxyaudio-bin/PKGBUILD
-            linux-galaxyaudio-bin/.SRCINFO
-            linux-galaxyaudio-bin/linux-galaxyaudio-bin.install
-            linux-galaxyaudio-bin/linux-galaxyaudio.preset
+            deploy-bin/PKGBUILD
+            deploy-bin/.SRCINFO
+            deploy-bin/linux-galaxyaudio-bin.install
+            deploy-bin/linux-galaxyaudio.preset

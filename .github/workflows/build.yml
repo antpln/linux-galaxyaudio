@@ -24,7 +24,7 @@ jobs:
     
     steps:
       - name: Install dependencies
-        run: pacman -Syu --noconfirm --overwrite '*' git bc kmod libelf cpio perl tar xz python pahole pacman-contrib curl github-cli sudo ccache
+        run: pacman -Syu --noconfirm --overwrite '*' git bc kmod libelf cpio perl tar xz python pahole pacman-contrib curl github-cli sudo ccache nodejs openssh
           
       - uses: actions/checkout@v4
       
@@ -48,7 +48,7 @@ jobs:
           echo "MAKEFLAGS=\"-j\$(nproc)\"" >> /etc/makepkg.conf
           export CCACHE_DIR="${PWD}/.ccache"
           mkdir -p "$CCACHE_DIR"
-          ccache -M 5G
+          ccache -M 10G
           
 
           set -e
@@ -157,19 +157,25 @@ jobs:
             --notes "Linux kernel ${ARCH_VER} with MAX98390 sound support for Samsung Galaxy Book." \
             *.pkg.tar.zst
           
+          # Prepare flat directory for AUR deployment
+          mkdir -p deploy-bin
+          cp linux-galaxyaudio-bin/{PKGBUILD,.SRCINFO,linux-galaxyaudio-bin.install,linux-galaxyaudio.preset} deploy-bin/
+          
           echo "status=built" >> $GITHUB_OUTPUT
+          echo "version=${ARCH_VER}" >> $GITHUB_OUTPUT
           
       - name: Publish to AUR (bin)
         if: steps.build-kernel.outputs.status == 'built'
         uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
           pkgname: linux-galaxyaudio-bin
-          pkgbuild: ./linux-galaxyaudio-bin/PKGBUILD
+          pkgbuild: ./deploy-bin/PKGBUILD
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: "Update to $(grep pkgver= PKGBUILD | cut -d= -f2)"
+          commit_message: "Update to ${{ steps.build-kernel.outputs.version }}"
           assets: |
-            linux-galaxyaudio-bin/PKGBUILD
-            linux-galaxyaudio-bin/.SRCINFO
-            linux-galaxyaudio-bin/linux-galaxyaudio-bin.install
+            deploy-bin/PKGBUILD
+            deploy-bin/.SRCINFO
+            deploy-bin/linux-galaxyaudio-bin.install
+            deploy-bin/linux-galaxyaudio.preset
