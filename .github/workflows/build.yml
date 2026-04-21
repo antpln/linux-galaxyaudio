@@ -80,7 +80,7 @@ jobs:
           
           echo "Arch: $ARCH_VER | Current: $CURRENT"
           
-          FORCE="${{ github.event.inputs.force }}"
+          FORCE="${{ inputs.force }}"
           if [ "$ARCH_VER" = "$CURRENT" ] && [ "$FORCE" != "true" ]; then
             echo "Already up to date"
             echo "status=skipped" >> $GITHUB_OUTPUT
