@@ -15,7 +15,7 @@ jobs:
     
     steps:
       - name: Install dependencies
-        run: pacman -Sy --noconfirm git pacman-contrib curl github-cli sudo nodejs openssh
+        run: pacman -Sy --noconfirm git pacman-contrib curl github-cli sudo
 
       - uses: actions/checkout@v4
       
@@ -87,7 +87,7 @@ jobs:
           cp linux-galaxyaudio-bin/{PKGBUILD,.SRCINFO,linux-galaxyaudio-bin.install,linux-galaxyaudio.preset} deploy-bin/
           
       - name: Publish to AUR
-        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
           pkgname: linux-galaxyaudio-bin
           pkgbuild: ./deploy-bin/PKGBUILD

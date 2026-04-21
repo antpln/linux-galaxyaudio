@@ -24,7 +24,7 @@ jobs:
     
     steps:
       - name: Install dependencies
-        run: pacman -Syu --noconfirm --overwrite '*' git bc kmod libelf cpio perl tar xz python pahole pacman-contrib curl github-cli sudo ccache nodejs openssh
+        run: pacman -Syu --noconfirm --overwrite '*' git bc kmod libelf cpio perl tar xz python pahole pacman-contrib curl github-cli sudo ccache
           
       - uses: actions/checkout@v4
       
@@ -166,7 +166,7 @@ jobs:
           
       - name: Publish to AUR (bin)
         if: steps.build-kernel.outputs.status == 'built'
-        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
           pkgname: linux-galaxyaudio-bin
           pkgbuild: ./deploy-bin/PKGBUILD

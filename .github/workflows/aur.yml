@@ -19,7 +19,7 @@ jobs:
         run: echo "version=$(grep ^pkgver= PKGBUILD | cut -d= -f2)" >> $GITHUB_OUTPUT
 
       - name: Publish to AUR
-        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
           pkgname: linux-galaxyaudio
           pkgbuild: ./PKGBUILD
