@@ -135,16 +135,6 @@ jobs:
           
           git add PKGBUILD .SRCINFO linux-galaxyaudio-bin/PKGBUILD linux-galaxyaudio-bin/.SRCINFO
           
-          if [ -n "$(git status --porcelain PKGBUILD .SRCINFO linux-galaxyaudio-bin/PKGBUILD linux-galaxyaudio-bin/.SRCINFO)" ]; then
-            git commit -m "Update to ${ARCH_VER}"
-            git push
-          else
-            echo "No changes to PKGBUILD or .SRCINFO, skipping commit."
-          fi
-          
-          echo "Disk space after build:"
-          df -h .
-          
           # Release
           # If forcing, or if the tag exists for some reason, delete it first to allow replacement
           if gh release view "v${ARCH_VER}" >/dev/null 2>&1; then
@@ -157,6 +147,13 @@ jobs:
             --notes "Linux kernel ${ARCH_VER} with MAX98390 sound support for Samsung Galaxy Book." \
             *.pkg.tar.zst
           
+          # Push repository changes only after successful release
+          if [ -n "$(git status --porcelain PKGBUILD .SRCINFO linux-galaxyaudio-bin/PKGBUILD linux-galaxyaudio-bin/.SRCINFO)" ]; then
+            git push
+          else
+            echo "No changes to push."
+          fi
+
           # Prepare flat directory for AUR deployment
           mkdir -p deploy-bin
           cp linux-galaxyaudio-bin/{PKGBUILD,.SRCINFO,linux-galaxyaudio-bin.install,linux-galaxyaudio.preset} deploy-bin/
