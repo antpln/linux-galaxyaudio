@@ -16,8 +16,12 @@ makedepends=(
   git
 )
 options=('!strip')
+
+# Kernel.org directory is based on the major version (v6.x, v7.x, ...)
+_major="${pkgver%%.*}"
+
 source=(
-  "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-${pkgver}.tar.xz"
+  "https://cdn.kernel.org/pub/linux/kernel/v${_major}.x/linux-${pkgver}.tar.xz"
   "config"
   "max98390-sound.patch"
 )
